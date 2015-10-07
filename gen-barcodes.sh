@@ -96,13 +96,14 @@ fi
 
 DIMS="133x70+0+0"
 if [ "${ANNOTATE}" = "TRUE" ]; then
-   DIMS="143x75+0+0"
+   #DIMS="143x75+0+0"
+   DIMS="455x295+0+0"
    assert_command_exists "convert" "ImageMagick"
 fi
 
 assert_command_exists "dmtxwrite" "dmtx-utils"
 
-rm "${TMPDIR}/*.png" > /dev/null 2>&1
+rm ${TMPDIR}/*.png > /dev/null 2>&1
 mkdir -p $TMPDIR
 
 echo "generating individual barcodes in ${TMPDIR}..."
@@ -116,7 +117,7 @@ for IDX in `seq -f "%04g" $IDXFIRST $IDXLAST`; do
    fi
 
    if [ "${ANNOTATE}" = "TRUE" ]; then
-      echo -n "${CODE}" | dmtxwrite | convert - -gravity South -splice 0x5 -annotate 0 "${CODE}" $FILENAME
+      echo -n "${CODE}" | dmtxwrite | convert - -gravity South -splice 0x50 -extent 295x135 -bordercolor White -border 80x80 -pointsize 45 -annotate +0+50 "KBC ${CODE}" $FILENAME
    else
       echo -n "${CODE}" | dmtxwrite -o $FILENAME
    fi
@@ -124,6 +125,7 @@ done
 
 assert_command_exists "montage" "ImageMagick"
 
+FILENAME=$OUTPUTFILENAME
 if [ "${OUTPUTFILENAME}x" = "x" ]; then
    SUFFIX=`date "+%Y-%m-%d"`
    FILENAME="barcodes-${SUFFIX}.png"
@@ -131,6 +133,10 @@ fi
 
 echo "generating montaged sheets of barcodes as ${FILENAME}..."
 
-montage "${TMPDIR}/${PREFIX}*.png" -tile 4x11 -geometry $DIMS ${FILENAME}
+#TILES="4x11"
+#TILES="36x52"
+TILES="7x16"
+
+montage "${TMPDIR}/${PREFIX}*.png" -tile $TILES -geometry $DIMS ${FILENAME}
 
 echo "done."
