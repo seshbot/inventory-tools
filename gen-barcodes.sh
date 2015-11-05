@@ -23,6 +23,9 @@ do
        PREFIX="$2"
        shift
        ;;
+       --vectorise|--vectorize)
+       VECTORISE=TRUE
+       ;;
        -h|--help)
        HELP=TRUE
        ;;
@@ -120,6 +123,7 @@ fi
 assert_command_exists "dmtxwrite" "dmtx-utils"
 
 rm ${TMPDIR}/*.png > /dev/null 2>&1
+rm ${TMPDIR}/*.bmp > /dev/null 2>&1
 mkdir -p $TMPDIR
 
 echo "generating individual barcodes in ${TMPDIR}..."
@@ -143,8 +147,12 @@ assert_command_exists "montage" "ImageMagick"
 
 FILENAME=$OUTPUTFILENAME
 if [ "${OUTPUTFILENAME}x" = "x" ]; then
-   SUFFIX=`date "+%Y-%m-%d"`
-   FILENAME="barcodes-${PREFIX}-${SUFFIX}.png"
+   DATEBIT=`date "+%Y-%m-%d"`
+   SUFFIX="png"
+   if [ ${VECTORISE} = TRUE ]; then
+      SUFFIX="svg"
+   fi
+   FILENAME="barcodes-${PREFIX}-${DATEBIT}.${SUFFIX}"
 fi
 
 if [[ ${OUTPUTFILENAME} = *.svg ]]; then
@@ -162,7 +170,12 @@ echo "generating montaged sheets of barcodes as ${FILENAME}..."
 TILES="7x16"
 
 if [ "${VECTORISE}" = "TRUE" ]; then
-  run_command "montage \"${TMPDIR}/${PREFIX}*.png\" -tile $TILES -geometry $DIMS bmp:- | potrace -a 1 -s -o ${FILENAME}"
+  TMPBMPFILEBASE=${TMPDIR}/${FILENAME%.*}
+  run_command "montage \"${TMPDIR}/${PREFIX}*.png\" -tile $TILES -geometry $DIMS ${TMPBMPFILEBASE}.bmp"
+  for TMPBMPFILE in ${TMPBMPFILEBASE}*.bmp; do
+    SVGFILENAME=`basename ${TMPBMPFILE%.*}`.svg
+    run_command "potrace -a 1 -s -o $SVGFILENAME ${TMPBMPFILE}"
+  done
 else
   run_command "montage \"${TMPDIR}/${PREFIX}*.png\" -tile $TILES -geometry $DIMS ${FILENAME}"
 fi
